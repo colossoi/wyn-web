@@ -1,0 +1,3 @@
+[submodule "wyn"]
+	path = wyn
+	url = git@github.com:colossoi/wyn.git
