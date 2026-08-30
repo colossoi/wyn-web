@@ -38,7 +38,7 @@ export interface EntryBinding {
 
 export interface EntryInterface {
   name: string;
-  /** WGSL-mangled entry-point name — pass this as `entryPoint:` to
+  /** WGSL entry-point name — pass this as `entryPoint:` to
    *  WebGPU's pipeline creation. */
   wgsl_name: string;
   /** "vertex" | "fragment" | "compute" */

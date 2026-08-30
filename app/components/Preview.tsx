@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CompileResultWgsl, ErrorInfo } from "~/lib/wasm";
 import {
   availableColorSpaces,
@@ -49,14 +49,14 @@ export function Preview({ result, errorInfo, onErrorClick }: PreviewProps) {
   });
   const [gpuError, setGpuError] = useState<string | null>(null);
   const [colorspace, setColorspace] = useState<PredefinedColorSpace>("srgb");
-  // Probed once on mount — the dropdown only offers what the display
-  // can actually render. `availableColorSpaces` reads `matchMedia` and
-  // is safe to call repeatedly, but useMemo keeps the option list
-  // referentially stable for React reconciliation.
-  const colorSpaceOptions = useMemo<PredefinedColorSpace[]>(
-    () => availableColorSpaces(),
-    [],
-  );
+  // Keep the server render and the browser's first render identical, then
+  // probe display capabilities after hydration. Reading `matchMedia` during
+  // render would make P3-capable browsers add an option that SSR cannot see.
+  const [colorSpaceOptions, setColorSpaceOptions] = useState<PredefinedColorSpace[]>(["srgb"]);
+
+  useEffect(() => {
+    setColorSpaceOptions(availableColorSpaces());
+  }, []);
 
   // Initialize WebGPU context once.
   useEffect(() => {

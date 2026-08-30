@@ -41,6 +41,11 @@ export function Header() {
           <Link to="/popular" className="header-nav-link">
             Popular
           </Link>
+          {session && (
+            <Link to={`/u/${session.login}`} className="header-nav-link">
+              My shaders
+            </Link>
+          )}
           <a href="/spec/" className="header-nav-link">
             Spec
           </a>
