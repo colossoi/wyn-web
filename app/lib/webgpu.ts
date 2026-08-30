@@ -4,9 +4,9 @@
 // Flow:
 //   setupContext → createPipelines → startRenderLoop → stop()
 //
-// Shadertoy-style uniforms (iResolution: vec3<f32>, iTime: f32,
-// iMouse: vec4<f32>) get auto-populated per frame; other uniforms are
-// left untouched (the backing buffer is zero-initialized).
+// Shadertoy Image-pass uniforms get auto-populated per frame. Channel
+// timing/resolution arrays remain zero until the playground supports
+// configured channel resources.
 //
 // Storage buffers (both user-declared and compiler-introduced by the
 // parallelize pass for lifted pre-pass partials/results) are allocated
@@ -100,6 +100,12 @@ const STORAGE_BUFFER_BYTES = 64 * 1024;
  *  types we don't recognize — those bindings get a 16-byte fallback. */
 function uniformSizeBytes(ty: string): number {
   const t = ty.replace(/\s+/g, "");
+  const array = /^\[(\d+)\](.+)$/.exec(t);
+  if (array) {
+    const count = Number(array[1]);
+    const elementSize = uniformSizeBytes(array[2]);
+    return count * Math.max(16, elementSize);
+  }
   if (t === "f32" || t === "i32" || t === "u32") return 4;
   if (t === "vec2<f32>" || t === "vec2f") return 8;
   if (t === "vec3<f32>" || t === "vec3f") return 12;
@@ -143,7 +149,14 @@ export interface RenderResources {
   shadertoy: {
     iResolution?: GPUBuffer;
     iTime?: GPUBuffer;
+    iTimeDelta?: GPUBuffer;
+    iFrameRate?: GPUBuffer;
+    iFrame?: GPUBuffer;
+    iChannelTime?: GPUBuffer;
+    iChannelResolution?: GPUBuffer;
     iMouse?: GPUBuffer;
+    iDate?: GPUBuffer;
+    iSampleRate?: GPUBuffer;
   };
 }
 
@@ -176,7 +189,14 @@ export function createPipelines(
     uniformBuffers.set(bindingKey(u.set, u.binding), buf);
     if (u.name === "iResolution") shadertoy.iResolution = buf;
     else if (u.name === "iTime") shadertoy.iTime = buf;
+    else if (u.name === "iTimeDelta") shadertoy.iTimeDelta = buf;
+    else if (u.name === "iFrameRate") shadertoy.iFrameRate = buf;
+    else if (u.name === "iFrame") shadertoy.iFrame = buf;
+    else if (u.name === "iChannelTime") shadertoy.iChannelTime = buf;
+    else if (u.name === "iChannelResolution") shadertoy.iChannelResolution = buf;
     else if (u.name === "iMouse") shadertoy.iMouse = buf;
+    else if (u.name === "iDate") shadertoy.iDate = buf;
+    else if (u.name === "iSampleRate") shadertoy.iSampleRate = buf;
   }
 
   const storageBuffers = new Map<string, GPUBuffer>();
@@ -191,6 +211,19 @@ export function createPipelines(
     });
     storageBuffers.set(bindingKey(s.set, s.binding), buf);
   }
+  const storageInputBuffer = (name: string): GPUBuffer | undefined => {
+    for (const input of iface.entries.flatMap((entry) => entry.inputs)) {
+      if (input.name !== name) continue;
+      const match = /^storage\((\d+),(\d+)\)$/.exec(input.decoration);
+      if (match) {
+        return storageBuffers.get(bindingKey(Number(match[1]), Number(match[2])));
+      }
+    }
+    return undefined;
+  };
+  // Wyn represents fixed-array entry inputs as storage-backed values.
+  shadertoy.iChannelTime ??= storageInputBuffer("iChannelTime");
+  shadertoy.iChannelResolution ??= storageInputBuffer("iChannelResolution");
 
   // Render and compute pipelines use separate bind group layouts over
   // the same buffers because the layout type must match the shader's
@@ -403,7 +436,7 @@ export interface RenderLoop {
 }
 
 /** Drive pipelines once per RAF tick. Each frame:
- *   - update known Shadertoy uniforms (iResolution, iTime, iMouse)
+ *   - update known Shadertoy Image-pass uniforms
  *   - dispatch every compute entry (single workgroup each)
  *   - encode a render pass drawing a 3-vertex full-screen triangle, if
  *     the program has vertex+fragment entries
@@ -422,10 +455,19 @@ export function startRenderLoop(
   let pausedAt: number | null = null;
   let frameCount = 0;
   let lastFpsUpdate = startTime;
+  let previousFrameTime = startTime;
+  let shaderFrame = 0;
 
   const resolutionBytes = new Float32Array(3); // vec3<f32>
   const timeBytes = new Float32Array(1);
+  const timeDeltaBytes = new Float32Array(1);
+  const frameRateBytes = new Float32Array(1);
+  const frameBytes = new Int32Array(1);
+  const channelTimeBytes = new Float32Array(4); // [4]f32
+  const channelResolutionBytes = new Float32Array(16); // [4]vec3<f32>, stride 16
   const mouseBytes = new Float32Array(4);
+  const dateBytes = new Float32Array(4);
+  const sampleRateBytes = new Float32Array([44_100]);
 
   // Shadertoy-style iMouse:
   //   .xy = current mouse position in framebuffer pixels (origin
@@ -497,8 +539,11 @@ export function startRenderLoop(
     if (pausedAt !== null) {
       startTime += time - pausedAt;
       pausedAt = null;
+      previousFrameTime = time;
     }
     const currentTime = (time - startTime) / 1000;
+    const timeDelta = Math.max(0, (time - previousFrameTime) / 1000);
+    previousFrameTime = time;
     onElapsed?.(currentTime);
 
     // Update recognized uniforms.
@@ -512,6 +557,28 @@ export function startRenderLoop(
       timeBytes[0] = currentTime;
       device.queue.writeBuffer(res.shadertoy.iTime, 0, timeBytes);
     }
+    if (res.shadertoy.iTimeDelta) {
+      timeDeltaBytes[0] = timeDelta;
+      device.queue.writeBuffer(res.shadertoy.iTimeDelta, 0, timeDeltaBytes);
+    }
+    if (res.shadertoy.iFrameRate) {
+      frameRateBytes[0] = timeDelta > 0 ? 1 / timeDelta : 0;
+      device.queue.writeBuffer(res.shadertoy.iFrameRate, 0, frameRateBytes);
+    }
+    if (res.shadertoy.iFrame) {
+      frameBytes[0] = shaderFrame;
+      device.queue.writeBuffer(res.shadertoy.iFrame, 0, frameBytes);
+    }
+    if (res.shadertoy.iChannelTime) {
+      device.queue.writeBuffer(res.shadertoy.iChannelTime, 0, channelTimeBytes);
+    }
+    if (res.shadertoy.iChannelResolution) {
+      device.queue.writeBuffer(
+        res.shadertoy.iChannelResolution,
+        0,
+        channelResolutionBytes,
+      );
+    }
     if (res.shadertoy.iMouse) {
       mouseBytes[0] = mouseState.curX;
       mouseBytes[1] = mouseState.curY;
@@ -520,6 +587,21 @@ export function startRenderLoop(
       mouseBytes[2] = mouseState.held ? mouseState.clickX : -mouseState.clickX;
       mouseBytes[3] = mouseState.held ? mouseState.clickY : -mouseState.clickY;
       device.queue.writeBuffer(res.shadertoy.iMouse, 0, mouseBytes);
+    }
+    if (res.shadertoy.iDate) {
+      const now = new Date();
+      dateBytes[0] = now.getFullYear();
+      dateBytes[1] = now.getMonth() + 1;
+      dateBytes[2] = now.getDate();
+      dateBytes[3] =
+        now.getHours() * 3600 +
+        now.getMinutes() * 60 +
+        now.getSeconds() +
+        now.getMilliseconds() / 1000;
+      device.queue.writeBuffer(res.shadertoy.iDate, 0, dateBytes);
+    }
+    if (res.shadertoy.iSampleRate) {
+      device.queue.writeBuffer(res.shadertoy.iSampleRate, 0, sampleRateBytes);
     }
 
     const encoder = device.createCommandEncoder();
@@ -564,6 +646,7 @@ export function startRenderLoop(
     device.queue.submit([encoder.finish()]);
 
     frameCount++;
+    shaderFrame++;
     if (time - lastFpsUpdate > 1000) {
       onFps(Math.round((frameCount * 1000) / (time - lastFpsUpdate)));
       frameCount = 0;
