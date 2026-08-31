@@ -3,8 +3,8 @@
 
 def main_image(iResolution: vec3f32,
                iTime: f32,
-               fragment: fragment_invocation<vec2f32>) vec4f32 =
-  let uv = fragment.position.xy / iResolution.xy in
+               frag_coord: vec2f32) vec4f32 =
+  let uv = frag_coord / iResolution.xy in
   let phase = iTime in
   let r = 0.5 + 0.5 * f32.cos(phase + uv.x * 3.0) in
   let g = 0.5 + 0.5 * f32.cos(phase + uv.y * 3.0 + 2.0) in

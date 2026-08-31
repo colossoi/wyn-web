@@ -41,6 +41,9 @@ export function Header() {
           <Link to="/popular" className="header-nav-link">
             Popular
           </Link>
+          <Link to="/develop" className="header-nav-link">
+            Develop
+          </Link>
           {session && (
             <Link to={`/u/${session.login}`} className="header-nav-link">
               My shaders
@@ -49,7 +52,6 @@ export function Header() {
           <a href="/spec/" className="header-nav-link">
             Spec
           </a>
-          {/* Future: Docs, Tutorials, etc. drop in here. */}
         </nav>
         {session ? <SignedIn session={session} /> : <SignedOut />}
       </div>

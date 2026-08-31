@@ -16,7 +16,7 @@ const IMAGE_INPUT_TYPES = {
   iMouse: "vec4f32",
   iDate: "vec4f32",
   iSampleRate: "f32",
-  fragment: "fragment_invocation<vec2f32>",
+  frag_coord: "vec2f32",
 } as const;
 
 interface Parameter {
@@ -60,11 +60,13 @@ export function preparePlaygroundSource(userSource: string): PreparedSource {
   validateParameters(parameters, userSource, declaration.nameOffset);
 
   const entryParameters = parameters
-    .filter(({ name }) => name !== "fragment")
+    .filter(({ name }) => name !== "frag_coord")
     .map(({ name, type }) => `            ${name}: ${type},`)
     .join("\n");
   const argumentsText = parameters
-    .map(({ name }) => `      ${name},`)
+    .map(({ name }) =>
+      `      ${name === "frag_coord" ? "fragment.position.xy" : name},`
+    )
     .join("\n")
     .replace(/,$/, "");
 

@@ -4,6 +4,7 @@ export default [
   index("routes/home.tsx"),
   route("new", "routes/new.tsx"),
   route("popular", "routes/popular.tsx"),
+  route("develop", "routes/develop.tsx"),
   route("s/:slug", "routes/shader.tsx"),
   route("u/:login", "routes/user.tsx"),
   route("auth/github", "routes/auth.github.tsx"),
