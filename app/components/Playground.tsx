@@ -18,6 +18,11 @@ import { Preview } from "~/components/Preview";
 import { StatusBar, type Status } from "~/components/StatusBar";
 import type { CompileResultWgsl, ErrorInfo, WynWasm } from "~/lib/wasm";
 import { initWasm } from "~/lib/wasm";
+import defaultImageSource from "~/playground/examples/default.wyn?raw";
+import {
+  PlaygroundSourceError,
+  preparePlaygroundSource,
+} from "~/playground/prepare-source";
 
 export interface AdminControls {
   /** Whether this shader is currently in the featured_shaders table.
@@ -78,7 +83,7 @@ export function Playground({
       .then((w) => {
         if (cancelled) return;
         setWasm(w);
-        const src = initialSource ?? w.get_example_program();
+        const src = initialSource ?? defaultImageSource;
         setSource(src);
         if (editorRef.current) editorRef.current.setValue(src);
         compile(w, src);
@@ -100,7 +105,18 @@ export function Playground({
     setStatus("compiling");
     setStatusText("Compiling...");
     try {
-      const r = w.compile_to_wgsl(src);
+      const prepared = preparePlaygroundSource(src);
+      const r = w.compile_to_wgsl(prepared.source);
+      if (r.error) {
+        const mapped = prepared.mapLocation(r.error.location);
+        r.error = {
+          message:
+            r.error.location && !mapped && prepared.generated
+              ? `Generated image wrapper: ${r.error.message}`
+              : r.error.message,
+          location: mapped,
+        };
+      }
       setResult(r);
       if (!r.success) {
         const err = r.error || {
@@ -116,7 +132,11 @@ export function Playground({
         setStatusText("Running");
       }
     } catch (e) {
-      setErrorInfo({ message: `Compile threw: ${e}`, location: null });
+      const sourceError = e instanceof PlaygroundSourceError ? e : null;
+      setErrorInfo({
+        message: sourceError?.message ?? `Compile threw: ${e}`,
+        location: sourceError?.location ?? null,
+      });
       setStatus("error");
       setStatusText("Error");
     }

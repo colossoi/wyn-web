@@ -1,0 +1,28 @@
+-- Wyn Playground image-shader wrapper.
+--
+-- This file is loaded as text by the playground. The three marker comments
+-- are replaced immediately before compilation; users edit and save only the
+-- source inserted at PLAYGROUND_USER_SOURCE.
+
+def __playground_vertices: [3]vec4f32 =
+  [@[-1.0, -1.0, 0.0, 1.0],
+   @[3.0, -1.0, 0.0, 1.0],
+   @[-1.0, 3.0, 0.0, 1.0]]
+
+def __playground_vertex_main(vertex: vertex_invocation) vertex<vec2f32> =
+  vertex_output(
+    __playground_vertices[i32(vertex.vertex_index)],
+    @[0.0, 0.0])
+
+-- PLAYGROUND_USER_SOURCE
+
+entry image(
+-- PLAYGROUND_ENTRY_PARAMETERS
+            screen: render_target<vec4f32>) render_target<vec4f32> =
+  let raster = rasterize_triangles(
+    direct_draw(3u32, 1u32), __playground_vertex_main)
+  in
+  shade(screen, raster, |fragment|
+    main_image(
+-- PLAYGROUND_MAIN_IMAGE_ARGUMENTS
+    ))
