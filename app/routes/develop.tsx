@@ -59,10 +59,10 @@ export default function DevelopRoute() {
           </p>
           <p>
             Playground shader source is intentionally not a complete Wyn program.
-            The playground combines your function with a hidden Wyn framework that
-            draws a fullscreen triangle, rasterizes it, and calls <code>main_image</code>
-            for every covered pixel. You write the per-pixel computation while the
-            framework supplies the graphics-pipeline entry and resource plumbing.
+            The playground combines your function with a prelude framework that
+            calls <code>main_image</code> for every pixel in the rendered image.
+            You write the per-pixel computation while the framework supplies the
+            graphics-pipeline entry and resource plumbing.
           </p>
           <p>
             The playground can also provide live metadata such as the framebuffer
@@ -114,35 +114,10 @@ export default function DevelopRoute() {
         </section>
 
         <section>
-          <h2 id="pipeline">What the playground generates</h2>
-          <p>
-            Your source is inserted into a private wrapper containing a fullscreen
-            triangle, its vertex function, and an <code>image</code> pipeline entry.
-            The fragment callback calls <code>main_image</code> with exactly the
-            arguments you requested.
-          </p>
-          <div className="develop-flow" aria-label="Playground compilation flow">
-            <span>User <code>main_image</code></span><b>→</b>
-            <span>hidden Wyn wrapper</span><b>→</b>
-            <span>Wyn compiler</span><b>→</b>
-            <span>WGSL + WebGPU</span>
-          </div>
-          <p>
-            The wrapper uses Wyn’s regular graphics operations: a direct draw,
-            triangle rasterization, and fragment shading. Their language semantics
-            are described in{" "}
-            <a href="/spec/unified-pipeline-entries-and-stage-invocation.html">
-              Unified Pipeline Entries and Stage Invocation
-            </a>{" "}
-            and <a href="/spec/external-resources.html">External Resources</a>.
-          </p>
-        </section>
-
-        <section>
           <h2 id="workflow">Compile, inspect, and debug</h2>
           <ul>
             <li>Choose <strong>Compile &amp; Run</strong> or press <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Enter</kbd>.</li>
-            <li>Compiler diagnostics refer to your editor lines; hidden-wrapper locations are not exposed as user source.</li>
+            <li>Compiler diagnostics refer to your editor lines; framework locations are not exposed as user source.</li>
             <li>Pause and restart the animation with the preview controls, or use fullscreen for a larger framebuffer.</li>
             <li>Open <strong>Pipeline</strong> to inspect generated entry points and resource bindings.</li>
             <li>Use the <strong>TLC</strong>, <strong>MIR</strong>, and <strong>WGSL</strong> output tabs to see the compiler’s intermediate and final output.</li>

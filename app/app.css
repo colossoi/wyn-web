@@ -1660,29 +1660,6 @@
       .develop-table td { color: #aaaabd; }
       .develop-table tr:last-child td { border-bottom: 0; }
 
-      .develop-flow {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin: 22px 0;
-        padding: 20px;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        background: rgba(15, 15, 26, 0.55);
-      }
-
-      .develop-flow span {
-        padding: 8px 11px;
-        border-radius: 6px;
-        background: rgba(99, 102, 241, 0.12);
-        color: var(--text-primary);
-        font-size: 0.86rem;
-      }
-
-      .develop-flow b { color: var(--text-secondary); }
-
       .develop-next {
         padding: 26px;
         border: 1px solid rgba(99, 102, 241, 0.45);
@@ -1696,5 +1673,4 @@
       @media (max-width: 640px) {
         .develop-page { padding: 38px 18px 72px; }
         .develop-table th, .develop-table td { padding: 10px; }
-        .develop-flow { justify-content: flex-start; }
       }
