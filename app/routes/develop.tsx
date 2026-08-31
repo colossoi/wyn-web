@@ -51,16 +51,29 @@ export default function DevelopRoute() {
         <section>
           <h2 id="main-image">The <code>main_image</code> contract</h2>
           <p>
-            Every playground shader defines one function named <code>main_image</code>
-            and returns a four-component RGBA color. Choose any subset of the
-            supported inputs, in any order. Input names and types must match the
-            table below exactly.
+            Every playground shader defines one function named <code>main_image</code>.
+            Each invocation computes the color of one pixel and returns that color
+            as a four-component RGBA vector. This is the same role played by a
+            fragment shader in WGSL or GLSL: the GPU runs it independently across
+            all fragments covered by the image.
+          </p>
+          <p>
+            Playground shader source is intentionally not a complete Wyn program.
+            The playground combines your function with a hidden Wyn framework that
+            draws a fullscreen triangle, rasterizes it, and calls <code>main_image</code>
+            for every covered pixel. You write the per-pixel computation while the
+            framework supplies the graphics-pipeline entry and resource plumbing.
+          </p>
+          <p>
+            The playground can also provide live metadata such as the framebuffer
+            size, elapsed time, frame number, mouse state, and current pixel
+            coordinate. Request a value by adding its recognized name and exact
+            type to <code>main_image</code>. Parameters may appear in any order, and
+            you only declare the values your shader needs.
           </p>
           <pre><code>{defaultImageSource}</code></pre>
           <p>
-            This is a playground convention, not special Wyn syntax. Function
-            declarations, expressions, vectors, and types retain their normal Wyn
-            meanings. See the specification chapters on{" "}
+            See the specification chapters on{" "}
             <a href="/spec/declaring-functions-and-values.html">functions and values</a>,{" "}
             <a href="/spec/expressions.html">expressions</a>, and{" "}
             <a href="/spec/vector-types.html">vector types</a>.
@@ -70,9 +83,11 @@ export default function DevelopRoute() {
         <section>
           <h2 id="inputs">Available inputs</h2>
           <p>
-            Only inputs named in your function signature become shader resources.
-            Leaving an input out is free: the wrapper does not declare it and the
-            browser does not update a buffer for it.
+            These are the names and types the playground recognizes. It matches
+            the parameters in your <code>main_image</code> signature against this
+            table and connects each requested value to the corresponding browser
+            or GPU state. A misspelled name or incorrect type is reported as a
+            playground source error.
           </p>
           <div className="develop-table-wrap">
             <table className="develop-table">
@@ -104,8 +119,7 @@ export default function DevelopRoute() {
             Your source is inserted into a private wrapper containing a fullscreen
             triangle, its vertex function, and an <code>image</code> pipeline entry.
             The fragment callback calls <code>main_image</code> with exactly the
-            arguments you requested. That expanded Wyn exists only in memory while
-            compiling; it is never placed in the editor or saved with your shader.
+            arguments you requested.
           </p>
           <div className="develop-flow" aria-label="Playground compilation flow">
             <span>User <code>main_image</code></span><b>→</b>
