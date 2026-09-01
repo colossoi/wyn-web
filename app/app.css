@@ -44,6 +44,7 @@
       }
 
       .logo {
+        display: inline-block;
         font-family: "Lobster", cursive;
         font-size: 1.9rem;
         font-weight: 400;
@@ -53,8 +54,8 @@
         -webkit-text-fill-color: transparent;
         background-clip: text;
         text-decoration: none;
-        line-height: 1;
-        padding-top: 4px;
+        line-height: 1.15;
+        padding: 2px 0 0.18em;
       }
 
       .header-right {
@@ -217,7 +218,7 @@
         display: flex;
         overflow: hidden;
         padding: 12px;
-        gap: 12px;
+        gap: 0;
       }
 
       .editor-panel {
@@ -228,6 +229,32 @@
         border-radius: 8px;
         overflow: hidden;
         background: var(--bg-darker);
+        min-width: 0;
+      }
+
+      .resize-handle-v {
+        width: 12px;
+        cursor: ew-resize;
+        flex-shrink: 0;
+        position: relative;
+        touch-action: none;
+      }
+
+      .resize-handle-v::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 5px;
+        width: 2px;
+        border-radius: 1px;
+        background: var(--border);
+        transition: background 0.2s;
+      }
+
+      .resize-handle-v:hover::before,
+      .resize-handle-v.dragging::before {
+        background: var(--accent);
       }
 
       .panel-header {
@@ -465,6 +492,7 @@
         cursor: ns-resize;
         flex-shrink: 0;
         position: relative;
+        touch-action: none;
       }
 
       .resize-handle-h::before {

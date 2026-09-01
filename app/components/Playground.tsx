@@ -67,6 +67,9 @@ export function Playground({
   const [errorInfo, setErrorInfo] = useState<ErrorInfo | null>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [statusText, setStatusText] = useState<string>("Loading...");
+  const [editorWidth, setEditorWidth] = useState<number | null>(null);
+  const [resizingEditor, setResizingEditor] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
   const editorRef = useRef<any>(null);
   const sourceRef = useRef<string>("");
   sourceRef.current = source;
@@ -216,10 +219,44 @@ export function Playground({
     });
   }, [slug, adminControls, featuring, featureFetcher]);
 
+  const handleEditorResize = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!resizingEditor || !mainRef.current) return;
+      const bounds = mainRef.current.getBoundingClientRect();
+      const handleWidth = 12;
+      const minPanelWidth = Math.min(280, (bounds.width - handleWidth) / 2);
+      const nextWidth = Math.max(
+        minPanelWidth,
+        Math.min(
+          event.clientX - bounds.left,
+          bounds.width - handleWidth - minPanelWidth,
+        ),
+      );
+      setEditorWidth(nextWidth);
+    },
+    [resizingEditor],
+  );
+
+  const stopEditorResize = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!resizingEditor) return;
+      event.currentTarget.releasePointerCapture(event.pointerId);
+      setResizingEditor(false);
+    },
+    [resizingEditor],
+  );
+
   return (
     <>
-      <main className="main-content">
-        <div className="editor-panel">
+      <main ref={mainRef} className="main-content">
+        <div
+          className="editor-panel"
+          style={
+            editorWidth === null
+              ? undefined
+              : { flex: "0 0 auto", width: editorWidth }
+          }
+        >
           <div className="panel-header">
             <input
               type="text"
@@ -275,6 +312,19 @@ export function Playground({
             onMount={handleEditorMount}
           />
         </div>
+        <div
+          className={`resize-handle-v ${resizingEditor ? "dragging" : ""}`}
+          role="separator"
+          aria-label="Resize source editor and preview"
+          aria-orientation="vertical"
+          onPointerDown={(event) => {
+            event.currentTarget.setPointerCapture(event.pointerId);
+            setResizingEditor(true);
+          }}
+          onPointerMove={handleEditorResize}
+          onPointerUp={stopEditorResize}
+          onPointerCancel={stopEditorResize}
+        />
         <Preview
           result={result}
           errorInfo={errorInfo}

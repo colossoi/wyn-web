@@ -27,6 +27,7 @@ interface PreviewProps {
 }
 
 export function Preview({ result, errorInfo, onErrorClick }: PreviewProps) {
+  const previewPanelRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // Store the WebGPU context in state (not a ref) so the pipeline-creation
   // effect re-runs once the async `setupContext` resolves. A ref would race
@@ -40,6 +41,8 @@ export function Preview({ result, errorInfo, onErrorClick }: PreviewProps) {
   const pausedRef = useRef(false);
   pausedRef.current = paused;
   const [pipelineOpen, setPipelineOpen] = useState(false);
+  const [renderHeight, setRenderHeight] = useState<number | null>(null);
+  const [resizingRender, setResizingRender] = useState(false);
   const [resolution, setResolution] = useState<{
     width: number;
     height: number;
@@ -138,8 +141,15 @@ export function Preview({ result, errorInfo, onErrorClick }: PreviewProps) {
   );
 
   return (
-    <div className="preview-panel">
-      <div className="preview-window">
+    <div ref={previewPanelRef} className="preview-panel">
+      <div
+        className="preview-window"
+        style={
+          renderHeight === null
+            ? undefined
+            : { flex: "0 0 auto", height: renderHeight }
+        }
+      >
         <div className="panel-header">
           <span>Preview</span>
         </div>
@@ -199,6 +209,40 @@ export function Preview({ result, errorInfo, onErrorClick }: PreviewProps) {
           </div>
         </div>
       </div>
+      <div
+        className={`resize-handle-h ${resizingRender ? "dragging" : ""}`}
+        role="separator"
+        aria-label="Resize render area"
+        aria-orientation="horizontal"
+        onPointerDown={(event) => {
+          event.currentTarget.setPointerCapture(event.pointerId);
+          setResizingRender(true);
+        }}
+        onPointerMove={(event) => {
+          if (!resizingRender || !previewPanelRef.current) return;
+          const bounds = previewPanelRef.current.getBoundingClientRect();
+          const minSectionHeight = Math.min(160, (bounds.height - 12) / 2);
+          setRenderHeight(
+            Math.max(
+              minSectionHeight,
+              Math.min(
+                event.clientY - bounds.top,
+                bounds.height - 12 - minSectionHeight,
+              ),
+            ),
+          );
+        }}
+        onPointerUp={(event) => {
+          if (!resizingRender) return;
+          event.currentTarget.releasePointerCapture(event.pointerId);
+          setResizingRender(false);
+        }}
+        onPointerCancel={(event) => {
+          if (!resizingRender) return;
+          event.currentTarget.releasePointerCapture(event.pointerId);
+          setResizingRender(false);
+        }}
+      />
       <div className="widget-row">
         <div className="widget">
           <div className="widget-title">Settings</div>
@@ -271,7 +315,6 @@ export function Preview({ result, errorInfo, onErrorClick }: PreviewProps) {
           </div>
         )}
       </div>
-      <div className="resize-handle-h" />
       <div className="output-panel">
         <div className="tab-bar">
           {(["output", "tlc", "mir", "wgsl"] as Tab[]).map((t) => (
