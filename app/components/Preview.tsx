@@ -77,7 +77,7 @@ export function Preview({ result, errorInfo, onErrorClick }: PreviewProps) {
   }, []);
 
   // Track container size → drive canvas backing-store dimensions and the
-  // reported resolution. iResolution picks up the new size automatically
+  // reported resolution. The resolution input picks up the new size automatically
   // because the render loop reads canvas.width/height each frame.
   useEffect(() => {
     const canvas = canvasRef.current;

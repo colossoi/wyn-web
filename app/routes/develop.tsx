@@ -13,16 +13,16 @@ export function meta(_: Route.MetaArgs) {
 }
 
 const inputs = [
-  ["iResolution", "vec3f32", "Framebuffer width, height, and pixel aspect ratio (currently 1.0)."],
-  ["iTime", "f32", "Seconds elapsed since the shader started, excluding paused time."],
-  ["iTimeDelta", "f32", "Seconds since the preceding rendered frame."],
-  ["iFrameRate", "f32", "Current frame rate, calculated as 1 / iTimeDelta."],
-  ["iFrame", "i32", "Rendered frame number, beginning at zero."],
-  ["iChannelTime", "[4]f32", "Channel playback times. These are zero until channels are supported."],
-  ["iChannelResolution", "[4]vec3f32", "Channel dimensions. These are zero until channels are supported."],
-  ["iMouse", "vec4f32", "Pointer position in xy and click position/state in zw, in framebuffer pixels."],
-  ["iDate", "vec4f32", "Local year, month, day, and seconds since midnight."],
-  ["iSampleRate", "f32", "Audio sample rate; currently 44,100 Hz."],
+  ["resolution", "vec3f32", "Framebuffer width, height, and pixel aspect ratio (currently 1.0)."],
+  ["time", "f32", "Seconds elapsed since the shader started, excluding paused time."],
+  ["time_delta", "f32", "Seconds since the preceding rendered frame."],
+  ["frame_rate", "f32", "Current frame rate, calculated as 1 / time_delta."],
+  ["frame", "i32", "Rendered frame number, beginning at zero."],
+  ["channel_time", "[4]f32", "Channel playback times. These are zero until channels are supported."],
+  ["channel_resolution", "[4]vec3f32", "Channel dimensions. These are zero until channels are supported."],
+  ["mouse", "vec4f32", "Pointer position in xy and click position/state in zw, in framebuffer pixels."],
+  ["date", "vec4f32", "Local year, month, day, and seconds since midnight."],
+  ["sample_rate", "f32", "Audio sample rate; currently 44,100 Hz."],
   ["frag_coord", "vec2f32", "The current pixel position in framebuffer coordinates."],
 ] as const;
 
@@ -107,7 +107,7 @@ export default function DevelopRoute() {
           <p>
             <code>frag_coord</code> and mouse coordinates use framebuffer pixels with the origin
             at the bottom left. While the primary pointer button is held,
-            <code>iMouse.xy</code> is the current position and <code>iMouse.zw</code>
+            <code>mouse.xy</code> is the current position and <code>mouse.zw</code>
             is the positive click position. After release, zw becomes negative.
             All four components are zero before the first click.
           </p>

@@ -1,11 +1,11 @@
 -- A playground image shader. Choose any supported inputs by name; the
 -- playground supplies them and builds the graphics pipeline around this code.
 
-def main_image(iResolution: vec3f32,
-               iTime: f32,
+def main_image(resolution: vec3f32,
+               time: f32,
                frag_coord: vec2f32) vec4f32 =
-  let uv = frag_coord / iResolution.xy in
-  let phase = iTime in
+  let uv = frag_coord / resolution.xy in
+  let phase = time in
   let r = 0.5 + 0.5 * f32.cos(phase + uv.x * 3.0) in
   let g = 0.5 + 0.5 * f32.cos(phase + uv.y * 3.0 + 2.0) in
   let b = 0.5 + 0.5 * f32.cos(phase + (uv.x + uv.y) * 1.5 + 4.0) in

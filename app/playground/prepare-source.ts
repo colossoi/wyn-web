@@ -6,16 +6,16 @@ const ARGUMENT_MARKER = "-- PLAYGROUND_MAIN_IMAGE_ARGUMENTS";
 const RESERVED_PREFIX = "__playground_";
 
 const IMAGE_INPUT_TYPES = {
-  iResolution: "vec3f32",
-  iTime: "f32",
-  iTimeDelta: "f32",
-  iFrameRate: "f32",
-  iFrame: "i32",
-  iChannelTime: "[4]f32",
-  iChannelResolution: "[4]vec3f32",
-  iMouse: "vec4f32",
-  iDate: "vec4f32",
-  iSampleRate: "f32",
+  resolution: "vec3f32",
+  time: "f32",
+  time_delta: "f32",
+  frame_rate: "f32",
+  frame: "i32",
+  channel_time: "[4]f32",
+  channel_resolution: "[4]vec3f32",
+  mouse: "vec4f32",
+  date: "vec4f32",
+  sample_rate: "f32",
   frag_coord: "vec2f32",
 } as const;
 

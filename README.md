@@ -82,13 +82,13 @@ The dev server hot-reloads the JS/TSX side automatically; only the WASM rebuild 
 ## Example shader
 
 ```wyn
-def main_image(iResolution: vec3f32,
-               iTime: f32,
+def main_image(resolution: vec3f32,
+               time: f32,
                frag_coord: vec2f32) vec4f32 =
-  let uv = frag_coord / iResolution.xy in
-  let r = 0.5 + 0.5 * f32.cos(iTime + uv.x * 3.0) in
-  let g = 0.5 + 0.5 * f32.cos(iTime + uv.y * 3.0 + 2.0) in
-  let b = 0.5 + 0.5 * f32.cos(iTime + (uv.x + uv.y) * 1.5 + 4.0) in
+  let uv = frag_coord / resolution.xy in
+  let r = 0.5 + 0.5 * f32.cos(time + uv.x * 3.0) in
+  let g = 0.5 + 0.5 * f32.cos(time + uv.y * 3.0 + 2.0) in
+  let b = 0.5 + 0.5 * f32.cos(time + (uv.x + uv.y) * 1.5 + 4.0) in
   @[r, g, b, 1.0]
 ```
 

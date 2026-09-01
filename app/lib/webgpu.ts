@@ -145,18 +145,18 @@ export interface RenderResources {
   uniformBuffers: Map<string, GPUBuffer>;
   /** Storage backing buffers keyed by `"set:binding"`. */
   storageBuffers: Map<string, GPUBuffer>;
-  /** Shortcut handles for auto-populated uniforms. */
-  shadertoy: {
-    iResolution?: GPUBuffer;
-    iTime?: GPUBuffer;
-    iTimeDelta?: GPUBuffer;
-    iFrameRate?: GPUBuffer;
-    iFrame?: GPUBuffer;
-    iChannelTime?: GPUBuffer;
-    iChannelResolution?: GPUBuffer;
-    iMouse?: GPUBuffer;
-    iDate?: GPUBuffer;
-    iSampleRate?: GPUBuffer;
+  /** Shortcut handles for auto-populated playground inputs. */
+  playground: {
+    resolution?: GPUBuffer;
+    time?: GPUBuffer;
+    timeDelta?: GPUBuffer;
+    frameRate?: GPUBuffer;
+    frame?: GPUBuffer;
+    channelTime?: GPUBuffer;
+    channelResolution?: GPUBuffer;
+    mouse?: GPUBuffer;
+    date?: GPUBuffer;
+    sampleRate?: GPUBuffer;
   };
 }
 
@@ -178,7 +178,7 @@ export function createPipelines(
   const module = device.createShaderModule({ code: wgsl });
 
   const uniformBuffers = new Map<string, GPUBuffer>();
-  const shadertoy: RenderResources["shadertoy"] = {};
+  const playground: RenderResources["playground"] = {};
   for (const u of iface.uniforms) {
     const size = pad16(uniformSizeBytes(u.ty));
     const buf = device.createBuffer({
@@ -187,16 +187,16 @@ export function createPipelines(
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     uniformBuffers.set(bindingKey(u.set, u.binding), buf);
-    if (u.name === "iResolution") shadertoy.iResolution = buf;
-    else if (u.name === "iTime") shadertoy.iTime = buf;
-    else if (u.name === "iTimeDelta") shadertoy.iTimeDelta = buf;
-    else if (u.name === "iFrameRate") shadertoy.iFrameRate = buf;
-    else if (u.name === "iFrame") shadertoy.iFrame = buf;
-    else if (u.name === "iChannelTime") shadertoy.iChannelTime = buf;
-    else if (u.name === "iChannelResolution") shadertoy.iChannelResolution = buf;
-    else if (u.name === "iMouse") shadertoy.iMouse = buf;
-    else if (u.name === "iDate") shadertoy.iDate = buf;
-    else if (u.name === "iSampleRate") shadertoy.iSampleRate = buf;
+    if (u.name === "resolution") playground.resolution = buf;
+    else if (u.name === "time") playground.time = buf;
+    else if (u.name === "time_delta") playground.timeDelta = buf;
+    else if (u.name === "frame_rate") playground.frameRate = buf;
+    else if (u.name === "frame") playground.frame = buf;
+    else if (u.name === "channel_time") playground.channelTime = buf;
+    else if (u.name === "channel_resolution") playground.channelResolution = buf;
+    else if (u.name === "mouse") playground.mouse = buf;
+    else if (u.name === "date") playground.date = buf;
+    else if (u.name === "sample_rate") playground.sampleRate = buf;
   }
 
   const storageBuffers = new Map<string, GPUBuffer>();
@@ -222,8 +222,8 @@ export function createPipelines(
     return undefined;
   };
   // Wyn represents fixed-array entry inputs as storage-backed values.
-  shadertoy.iChannelTime ??= storageInputBuffer("iChannelTime");
-  shadertoy.iChannelResolution ??= storageInputBuffer("iChannelResolution");
+  playground.channelTime ??= storageInputBuffer("channel_time");
+  playground.channelResolution ??= storageInputBuffer("channel_resolution");
 
   // Render and compute pipelines use separate bind group layouts over
   // the same buffers because the layout type must match the shader's
@@ -420,7 +420,7 @@ export function createPipelines(
     computeBindGroups,
     uniformBuffers,
     storageBuffers,
-    shadertoy,
+    playground,
   };
 }
 
@@ -469,13 +469,13 @@ export function startRenderLoop(
   const dateBytes = new Float32Array(4);
   const sampleRateBytes = new Float32Array([44_100]);
 
-  // Shadertoy-style iMouse:
+  // Shadertoy-style mouse state:
   //   .xy = current mouse position in framebuffer pixels (origin
-  //         bottom-left, matching iResolution's coord system) while
+  //         bottom-left, matching resolution's coordinate system) while
   //         the primary button is held; "last known" position once
   //         released.
   //   .z  = positive when held (encodes the click x); negative once
-  //         released. Shaders branch on `iMouse.z > 0` to detect "is
+  //         released. Shaders branch on `mouse.z > 0` to detect "is
   //         the user currently dragging?" — see holodice/kuko.
   //   .w  = mirror of .z for click y.
   // All zero before the first click ever.
@@ -530,7 +530,7 @@ export function startRenderLoop(
 
   function tick(time: number) {
     // Freeze elapsed time while paused; on resume, shift startTime so
-    // iTime keeps ticking seamlessly from where it was.
+    // time keeps ticking seamlessly from where it was.
     if (isPaused?.()) {
       if (pausedAt === null) pausedAt = time;
       animationId = requestAnimationFrame(tick);
@@ -546,49 +546,49 @@ export function startRenderLoop(
     previousFrameTime = time;
     onElapsed?.(currentTime);
 
-    // Update recognized uniforms.
-    if (res.shadertoy.iResolution) {
+    // Update recognized playground inputs.
+    if (res.playground.resolution) {
       resolutionBytes[0] = canvas.width;
       resolutionBytes[1] = canvas.height;
       resolutionBytes[2] = 1.0;
-      device.queue.writeBuffer(res.shadertoy.iResolution, 0, resolutionBytes);
+      device.queue.writeBuffer(res.playground.resolution, 0, resolutionBytes);
     }
-    if (res.shadertoy.iTime) {
+    if (res.playground.time) {
       timeBytes[0] = currentTime;
-      device.queue.writeBuffer(res.shadertoy.iTime, 0, timeBytes);
+      device.queue.writeBuffer(res.playground.time, 0, timeBytes);
     }
-    if (res.shadertoy.iTimeDelta) {
+    if (res.playground.timeDelta) {
       timeDeltaBytes[0] = timeDelta;
-      device.queue.writeBuffer(res.shadertoy.iTimeDelta, 0, timeDeltaBytes);
+      device.queue.writeBuffer(res.playground.timeDelta, 0, timeDeltaBytes);
     }
-    if (res.shadertoy.iFrameRate) {
+    if (res.playground.frameRate) {
       frameRateBytes[0] = timeDelta > 0 ? 1 / timeDelta : 0;
-      device.queue.writeBuffer(res.shadertoy.iFrameRate, 0, frameRateBytes);
+      device.queue.writeBuffer(res.playground.frameRate, 0, frameRateBytes);
     }
-    if (res.shadertoy.iFrame) {
+    if (res.playground.frame) {
       frameBytes[0] = shaderFrame;
-      device.queue.writeBuffer(res.shadertoy.iFrame, 0, frameBytes);
+      device.queue.writeBuffer(res.playground.frame, 0, frameBytes);
     }
-    if (res.shadertoy.iChannelTime) {
-      device.queue.writeBuffer(res.shadertoy.iChannelTime, 0, channelTimeBytes);
+    if (res.playground.channelTime) {
+      device.queue.writeBuffer(res.playground.channelTime, 0, channelTimeBytes);
     }
-    if (res.shadertoy.iChannelResolution) {
+    if (res.playground.channelResolution) {
       device.queue.writeBuffer(
-        res.shadertoy.iChannelResolution,
+        res.playground.channelResolution,
         0,
         channelResolutionBytes,
       );
     }
-    if (res.shadertoy.iMouse) {
+    if (res.playground.mouse) {
       mouseBytes[0] = mouseState.curX;
       mouseBytes[1] = mouseState.curY;
       // Sign of zw encodes "currently held": positive while down,
       // negative once released (Shadertoy convention).
       mouseBytes[2] = mouseState.held ? mouseState.clickX : -mouseState.clickX;
       mouseBytes[3] = mouseState.held ? mouseState.clickY : -mouseState.clickY;
-      device.queue.writeBuffer(res.shadertoy.iMouse, 0, mouseBytes);
+      device.queue.writeBuffer(res.playground.mouse, 0, mouseBytes);
     }
-    if (res.shadertoy.iDate) {
+    if (res.playground.date) {
       const now = new Date();
       dateBytes[0] = now.getFullYear();
       dateBytes[1] = now.getMonth() + 1;
@@ -598,10 +598,10 @@ export function startRenderLoop(
         now.getMinutes() * 60 +
         now.getSeconds() +
         now.getMilliseconds() / 1000;
-      device.queue.writeBuffer(res.shadertoy.iDate, 0, dateBytes);
+      device.queue.writeBuffer(res.playground.date, 0, dateBytes);
     }
-    if (res.shadertoy.iSampleRate) {
-      device.queue.writeBuffer(res.shadertoy.iSampleRate, 0, sampleRateBytes);
+    if (res.playground.sampleRate) {
+      device.queue.writeBuffer(res.playground.sampleRate, 0, sampleRateBytes);
     }
 
     const encoder = device.createCommandEncoder();
