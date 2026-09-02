@@ -109,7 +109,11 @@ export function Playground({
     setStatusText("Compiling...");
     try {
       const prepared = preparePlaygroundSource(src);
-      const r = w.compile_to_wgsl(prepared.source);
+      const r = w.compile_to_wgsl_with_options(
+        prepared.source,
+        true, // Enable the graphical vocabulary used by the image wrapper.
+        true, // Keep playground output direct: vertex + fragment only.
+      );
       if (r.error) {
         const mapped = prepared.mapLocation(r.error.location);
         r.error = {

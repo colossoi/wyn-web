@@ -76,6 +76,11 @@ export interface CompileResultWgsl {
 export interface WynWasm {
   version: () => string;
   compile_to_wgsl: (source: string) => CompileResultWgsl;
+  compile_to_wgsl_with_options: (
+    source: string,
+    graphics: boolean,
+    direct: boolean,
+  ) => CompileResultWgsl;
   get_example_program: () => string;
 }
 
@@ -96,6 +101,7 @@ export function initWasm(): Promise<WynWasm> {
       return {
         version: mod.version,
         compile_to_wgsl: mod.compile_to_wgsl,
+        compile_to_wgsl_with_options: mod.compile_to_wgsl_with_options,
         get_example_program: mod.get_example_program,
       };
     })();
