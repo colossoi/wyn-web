@@ -13,7 +13,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFetcher, useNavigate } from "react-router";
-import { Editor } from "~/components/Editor";
+import {
+  Editor,
+  editorThemeOptions,
+  type EditorTheme,
+} from "~/components/Editor";
 import { Preview } from "~/components/Preview";
 import { StatusBar, type Status } from "~/components/StatusBar";
 import type { CompileResultWgsl, ErrorInfo, WynWasm } from "~/lib/wasm";
@@ -68,6 +72,7 @@ export function Playground({
   const [status, setStatus] = useState<Status>("loading");
   const [statusText, setStatusText] = useState<string>("Loading...");
   const [editorWidth, setEditorWidth] = useState<number | null>(null);
+  const [editorTheme, setEditorTheme] = useState<EditorTheme>("tokyo-night");
   const [resizingEditor, setResizingEditor] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
   const editorRef = useRef<any>(null);
@@ -78,6 +83,18 @@ export function Playground({
 
   const saveFetcher = useFetcher<SaveResponse>();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const savedTheme = window.localStorage.getItem("wyn-editor-theme");
+    if (editorThemeOptions.some(([value]) => value === savedTheme)) {
+      setEditorTheme(savedTheme as EditorTheme);
+    }
+  }, []);
+
+  const handleThemeChange = useCallback((theme: EditorTheme) => {
+    setEditorTheme(theme);
+    window.localStorage.setItem("wyn-editor-theme", theme);
+  }, []);
 
   // Bootstrap WASM, load initial source (prop or fallback), auto-compile.
   useEffect(() => {
@@ -275,6 +292,23 @@ export function Playground({
             />
             <div className="panel-toolbar">
               <StatusBar status={status} text={statusText} />
+              <label className="ctrl editor-theme-control">
+                Theme
+                <select
+                  className="ctrl-select"
+                  value={editorTheme}
+                  onChange={(event) =>
+                    handleThemeChange(event.target.value as EditorTheme)
+                  }
+                  aria-label="Editor color theme"
+                >
+                  {editorThemeOptions.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <button
                 type="button"
                 onClick={handleCompile}
@@ -310,6 +344,7 @@ export function Playground({
           </div>
           <Editor
             initialValue=""
+            theme={editorTheme}
             errorLocation={errorInfo?.location ?? null}
             onChange={setSource}
             onCompile={handleCompile}

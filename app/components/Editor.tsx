@@ -1,11 +1,16 @@
 import { useEffect, useImperativeHandle, useRef } from "react";
-import { EditorState, StateEffect, StateField } from "@codemirror/state";
+import { Compartment, EditorState, StateEffect, StateField } from "@codemirror/state";
 import { EditorView, Decoration, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from "@codemirror/view";
 import type { DecorationSet } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { indentUnit } from "@codemirror/language";
 import { searchKeymap } from "@codemirror/search";
+import { dracula } from "@uiw/codemirror-theme-dracula";
+import { githubDark } from "@uiw/codemirror-theme-github";
 import { monokai } from "@uiw/codemirror-theme-monokai";
+import { nord } from "@uiw/codemirror-theme-nord";
+import { tokyoNight } from "@uiw/codemirror-theme-tokyo-night";
+import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import { wyn } from "~/lib/wyn-lang";
 import type { ErrorLocation } from "~/lib/wasm";
 
@@ -17,8 +22,36 @@ export interface EditorHandle {
   view: EditorView;
 }
 
+export const editorThemeOptions = [
+  ["tokyo-night", "Tokyo Night"],
+  ["no-highlighting", "No highlighting"],
+  ["vscode-dark", "VS Code Dark"],
+  ["dracula", "Dracula"],
+  ["github-dark", "GitHub Dark"],
+  ["nord", "Nord"],
+  ["monokai", "Monokai"],
+] as const;
+
+export type EditorTheme = (typeof editorThemeOptions)[number][0];
+
+const editorThemes: Record<EditorTheme, typeof monokai> = {
+  "tokyo-night": tokyoNight,
+  "no-highlighting": [
+    tokyoNight,
+    EditorView.theme({
+      ".cm-content span": { color: "#c0caf5 !important" },
+    }),
+  ],
+  "vscode-dark": vscodeDark,
+  dracula,
+  "github-dark": githubDark,
+  nord,
+  monokai,
+};
+
 interface EditorProps {
   initialValue: string;
+  theme: EditorTheme;
   errorLocation: ErrorLocation | null;
   onChange: (value: string) => void;
   onCompile: () => void;
@@ -73,9 +106,10 @@ const errorField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 });
 
-export function Editor({ initialValue, errorLocation, onChange, onCompile, onMount }: EditorProps) {
+export function Editor({ initialValue, theme, errorLocation, onChange, onCompile, onMount }: EditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const themeCompartmentRef = useRef(new Compartment());
   const callbacksRef = useRef({ onChange, onCompile, onMount });
   callbacksRef.current = { onChange, onCompile, onMount };
 
@@ -112,7 +146,7 @@ export function Editor({ initialValue, errorLocation, onChange, onCompile, onMou
         // Language must come before the theme so syntax-tag styles can layer
         // on top of the theme's defaults rather than being overwritten.
         wyn(),
-        monokai,
+        themeCompartmentRef.current.of(editorThemes[theme]),
       ],
     });
 
@@ -148,6 +182,14 @@ export function Editor({ initialValue, errorLocation, onChange, onCompile, onMou
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: themeCompartmentRef.current.reconfigure(editorThemes[theme]),
+    });
+  }, [theme]);
 
   // Push error-location changes into the editor via StateEffect.
   useEffect(() => {
