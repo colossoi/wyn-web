@@ -76,7 +76,6 @@ const BUILTIN_TYPES = new Set([
   "texture2d",
   "sampler",
   "storage_image",
-  "vertex_invocation",
   "draw",
   "vertex",
   "raster",
