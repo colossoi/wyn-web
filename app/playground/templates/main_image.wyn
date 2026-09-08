@@ -22,7 +22,7 @@ entry image(
   let raster = rasterize_triangles(
     direct_draw(3u32, 1u32), __playground_vertex_main)
   in
-  shade(screen, raster, |fragment|
+  shade(screen, raster, |_, fragment_position, _, _, _|
     main_image(
 -- PLAYGROUND_MAIN_IMAGE_ARGUMENTS
     ))

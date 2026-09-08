@@ -79,7 +79,6 @@ const BUILTIN_TYPES = new Set([
   "draw",
   "vertex",
   "raster",
-  "fragment_invocation",
   "fragment_output",
   "render_target",
   "viewport",

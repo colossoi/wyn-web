@@ -65,7 +65,7 @@ export function preparePlaygroundSource(userSource: string): PreparedSource {
     .join("\n");
   const argumentsText = parameters
     .map(({ name }) =>
-      `      ${name === "frag_coord" ? "fragment.position.xy" : name},`
+      `      ${name === "frag_coord" ? "fragment_position.xy" : name},`
     )
     .join("\n")
     .replace(/,$/, "");
